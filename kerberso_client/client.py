@@ -5,7 +5,10 @@ from ..interface_classes import User
 
 class Client:
 
-    def __init__(self,user,cryptor=AES_Cryptor()):
+    def __init__(self,user,cryptor=None):
+
+        if cryptor == None:
+            cryptor = AES_Cryptor()
 
         if not isinstance(cryptor,Cryptor):
             raise TypeError("'cryptor' argument must be an instance of class extending Cryptor class ")

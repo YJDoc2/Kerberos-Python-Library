@@ -15,11 +15,11 @@ class Local_db(DB):
 
 
 
-    def save_server(self,server_name,ticket):
+    def save_server(self,server_name,server_struct):
         path = os.path.join(self.ticket_path,server_name)
 
         with open(path,mode="w") as f:
-            f.write(json.dumps(ticket))
+            f.write(json.dumps(server_struct))
 
     def get_server(self,server_name):
         path=os.path.join(self.ticket_path,server_name)
@@ -33,7 +33,10 @@ class Local_db(DB):
 
         if ticket_string == '':
             raise ServerError(f"Cannot Find Requested Server with name {server_name}")
-        else:
+        
+        try:
             return json.loads(ticket_string)
+        except json.JSONDecodeError:
+            raise ServerError("Error in decoding server information")
         
 

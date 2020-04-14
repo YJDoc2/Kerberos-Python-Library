@@ -3,6 +3,7 @@ import json
 import random
 import base64
 from . import AUTH_INIT_VAL,AUTH_TICKET_LIFETIME
+from ..crypto_classes import Cryptor
 from ..interface_classes import User
 from .kerberos_tgs import Kerberos_TGS
 
@@ -10,6 +11,13 @@ from .kerberos_tgs import Kerberos_TGS
 class Kerberos_AS:
 
     def __init__(self,cryptor,tgs):
+
+        if not isinstance(tgs,Kerberos_TGS):
+            raise TypeError("'tgs' argument must be instance of Kerberos_TGS class")
+
+        if not isinstance(cryptor,Cryptor):
+            raise TypeError("'cryptor argument must be instance of class extending Cryptor class")
+        
         self.cryptor = cryptor
         self.tgs = tgs
 

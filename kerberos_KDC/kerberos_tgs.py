@@ -3,14 +3,20 @@ import random
 import base64
 import time
 from math import inf
+from ..crypto_classes import Cryptor
+from ..db_classes import DB
 from . import TGT_INIT_VAL,TICKET_LIFETIME
-from .. import SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX
+from . import SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX
 from ..ServerError import ServerError
 
 class Kerberos_TGS:
 
     def __init__(self,cryptor,db):
 
+        if not isinstance(cryptor,Cryptor):
+            raise TypeError("'cryptor' argument must be an instance of class extending class Cryptor")
+        if not isinstance(db,DB):
+            raise TypeError("'db' argument must be an instance of class extending class DB")
         self.cryptor = cryptor
         self.db = db
         self.key = base64.b64encode(random.getrandbits(256))
@@ -28,7 +34,7 @@ class Kerberos_TGS:
         name = str(s_uid)
         secrete_key = base64.b64encode(random.getrandbits(256))
         server = {}
-        server["uid"] = str(s_uid)
+        server["uid"] = name
         server["key"] = secrete_key
         server["init_val"] = random.randint(SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX)
         self.db.save_server(name,server)
@@ -80,7 +86,7 @@ class Kerberos_TGS:
         if req["uid1"] != str(c_uid1) or req["uid2"] != str(c_uid2):
             raise ServerError("Invalid Ticket Holder")
         if req.get("rand",inf) == inf:
-            raise ServerError("REquest must contain a Random Number")
+            raise ServerError("Request must contain a Random Number")
 
         req_server = req["target"]
         server = self.db.get_server(req_server)

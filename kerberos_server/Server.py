@@ -1,13 +1,16 @@
 import json
 import time
 from . import ServerError
-from .. import REQ_INIT_VAL
+from . import REQ_INIT_VAL
 from ..crypto_classes import Cryptor,AES_Cryptor
 from ..db_classes import DB,Local_db
 
 class Server:
 
-    def __init__(self,server_dict,cryptor=AES_Cryptor()):
+    def __init__(self,server_dict,cryptor=None):
+
+        if cryptor == None:
+            cryptor = AES_Cryptor()
         if not isinstance(cryptor,Cryptor):
             raise TypeError("'cryptor' argument must be an instance of class extending Cryptor class ")
         self.cryptor = cryptor
@@ -17,8 +20,15 @@ class Server:
         self.name = server_dict["uid"]
     
     @classmethod
-    def make_server_from_db(server_name,cryptor=AES_Cryptor(),db=Local_db()):
+    def make_server_from_db(server_name,cryptor=None,db=None):
 
+        if cryptor == None:
+            cryptor = AES_Cryptor()
+        if db == None:
+            db = Local_db()
+
+        if not isinstance(db,Cryptor):
+            raise TypeError("'cryptor' argument must be an instance of class extending Cryptor class ")
         if not isinstance(db,DB):
             raise TypeError("'db' argument must be an instance of class extending DB class ")
 
@@ -40,7 +50,7 @@ class Server:
         if ticket["timestamp"] > crr_time:
             raise ServerError("Invalid timestamp in ticket")
         if ticket["lifetime_ms"]+ticket["timestamp"] < crr_time:
-            raise ServerError("Ticket Lifetime Eceeded")
+            raise ServerError("Ticket Lifetime Exceeded")
         if ticket["target"] != self.name:
             raise ServerError("Wrong Target Server")
 
@@ -60,3 +70,4 @@ class Server:
             raise ServerError("Invalid Request Encryption")
 
         return req
+    #! What about encrpyt Response???

@@ -2,11 +2,17 @@ import time
 from ..db_classes import DB,Local_db
 from ..crypto_classes import Cryptor,AES_Cryptor
 from ..interface_classes import User
-from . import Kerberos_AS,Kerberos_TGS,AUTH_TICKET_LIFETIME,TICKET_LIFETIME
+from . import Kerberos_AS,Kerberos_TGS
+from ..constants import AUTH_TICKET_LIFETIME,TICKET_LIFETIME
 
 class Kerberos_KDC:
     
-    def __init__(self,cryptor=AES_Cryptor(),server_db=Local_db()):
+    def __init__(self,cryptor=None,server_db=None):
+
+        if cryptor == None:
+            cryptor = AES_Cryptor()
+        if server_db == None:
+            server_db = Local_db()
         
         if not isinstance(server_db,DB):
             raise TypeError("'server_db' argument must be an instance of class extending DB class ")
@@ -20,7 +26,7 @@ class Kerberos_KDC:
         
     def gen_auth_tickets(self,rand,c_uid1,c_uid2,user,lifetime_ms=AUTH_TICKET_LIFETIME):
         if not isinstance(user,User):
-            raise TypeError("make_auth_tickets(self,rand,c_uid1,c_uid2,user,lifetime_ms=AUTH_TICKET_LIFETIME):")
+            raise TypeError("'user' argument must be instance of a class extending user class")
         return self.AS.make_auth_tickets(rand,c_uid1,c_uid2,user,lifetime_ms)
 
     def add_server(self,s_uid):

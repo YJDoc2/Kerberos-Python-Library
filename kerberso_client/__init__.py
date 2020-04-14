@@ -1,1 +1,1 @@
-from .. import REQ_INIT_VAL
+from ..constants import REQ_INIT_VAL
