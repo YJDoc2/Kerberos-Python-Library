@@ -1,7 +1,5 @@
 import time
 import json
-import random
-import base64
 from . import AUTH_INIT_VAL,AUTH_TICKET_LIFETIME
 from ..crypto_classes import Cryptor
 from ..interface_classes import User
@@ -22,12 +20,13 @@ class Kerberos_AS:
         self.tgs = tgs
 
 
-    def make_auth_tickets(self,rand,c_uid1,c_uid2,user,lifetime_ms=AUTH_TICKET_LIFETIME):
-        if not isinstance(user,User):
-            raise TypeError("'user' argument must be an instance of class extending User")
+    def make_auth_tickets(self,rand,c_uid1,c_uid2,user_hash,lifetime_ms=AUTH_TICKET_LIFETIME):
+        if not isinstance(user_hash,str):
+            raise TypeError("'user_hash' argument must be an instance of class extending str")
         
-        pass_hash_key = user.password_to_key()
-        secrete_key = base64.b64encode(random.getrandbits(256))
+        pass_hash_key = user_hash
+        secrete_key = self.cryptor.get_random_key()
+
         ticket = {}
         ticket["uid1"] = str(c_uid1)
         ticket["uid2"] = str(c_uid2)
@@ -35,10 +34,12 @@ class Kerberos_AS:
         ticket["lifetime"] = lifetime_ms
         ticket["rand"] = rand
         ticket["target"] = "TGS"
-        ticket["key"] = str(secrete_key).encode('ascii')
-        res_enc_str = self.cryptor.encrypt(key=pass_hash_key,value_str=json.dumps(ticket),init_val=AUTH_INIT_VAL)
+        ticket["key"] = secrete_key
+        
+        auth_ticket = self.cryptor.encrypt(key=pass_hash_key,value_str=json.dumps(ticket),init_val=AUTH_INIT_VAL)
         tgt = self.tgs.get_tgt(c_uid1,c_uid2,key=secrete_key,lifetime_ms=lifetime_ms)
-        return (res_enc_str,tgt)
+        return (auth_ticket,tgt)
+        
 
 
 

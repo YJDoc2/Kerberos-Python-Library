@@ -24,10 +24,10 @@ class Kerberos_KDC:
         self.TGS = Kerberos_TGS(cryptor,server_db)
         self.AS = Kerberos_AS(cryptor,self.TGS)
         
-    def gen_auth_tickets(self,rand,c_uid1,c_uid2,user,lifetime_ms=AUTH_TICKET_LIFETIME):
-        if not isinstance(user,User):
-            raise TypeError("'user' argument must be instance of a class extending user class")
-        return self.AS.make_auth_tickets(rand,c_uid1,c_uid2,user,lifetime_ms)
+    def gen_auth_tickets(self,rand,c_uid1,c_uid2,user_hash,lifetime_ms=AUTH_TICKET_LIFETIME):
+        if not isinstance(user_hash,str):
+            raise TypeError("'user_hash' argument must be instance of a class extending str class")
+        return self.AS.make_auth_tickets(rand,c_uid1,c_uid2,user_hash,lifetime_ms)
 
     def add_server(self,s_uid):
         return self.TGS.add_server(s_uid)

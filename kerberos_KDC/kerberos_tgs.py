@@ -1,6 +1,5 @@
 import json
 import random
-import base64
 import time
 from math import inf
 from ..crypto_classes import Cryptor
@@ -19,7 +18,7 @@ class Kerberos_TGS:
             raise TypeError("'db' argument must be an instance of class extending class DB")
         self.cryptor = cryptor
         self.db = db
-        self.key = base64.b64encode(random.getrandbits(256))
+        self.key = self.cryptor.get_random_key()
 
         #! CHANGE THIS, maybe add IP address as uid2
         name = "TGS_SERVER"
@@ -32,7 +31,7 @@ class Kerberos_TGS:
         
     def add_server(self,s_uid):
         name = str(s_uid)
-        secrete_key = base64.b64encode(random.getrandbits(256))
+        secrete_key = self.cryptor.get_random_key()
         server = {}
         server["uid"] = name
         server["key"] = secrete_key
@@ -45,8 +44,9 @@ class Kerberos_TGS:
         tgt["uid2"] = str(c_uid2)
         tgt["key"] = key
         tgt["timestamp"] = int(time.time()*1000)
-        tgt["lifetime_ms"] = lifetime_ms
+        tgt["lifetime"] = lifetime_ms
         tgt["target"] = "TGS"
+        
         return self.cryptor.encrypt(self.key,json.dumps(tgt),init_val=TGT_INIT_VAL)
 
 
@@ -60,11 +60,11 @@ class Kerberos_TGS:
         
         crr_time = int(time.time()*1000)
 
-        if tgt["target"] != "TGT":
+        if tgt["target"] != "TGS":
             raise ServerError("Not a TGT")
         if tgt["timestamp"] > crr_time:
             raise ServerError("Invalid timestamp in ticket")
-        if tgt["lifetime_ms"]+tgt["timestamp"] < crr_time:
+        if tgt["lifetime"]+tgt["timestamp"] < crr_time:
             raise ServerError("Ticket Lifetime Eceeded")
         if tgt["uid1"] != str(c_uid1) or tgt["uid2"] != str(c_uid2):
             raise ServerError("Invalid Ticket Holder")
@@ -91,7 +91,7 @@ class Kerberos_TGS:
         req_server = req["target"]
         server = self.db.get_server(req_server)
 
-        secrete_key = base64.b64encode(random.getrandbits(256))
+        secrete_key = self.cryptor.get_random_key()
         crr_time = int(time.time()*1000)
 
         res = {}
@@ -100,6 +100,7 @@ class Kerberos_TGS:
         res["target"] = req_server
         res["rand"] = req["rand"]
         res["key"] = secrete_key
+        res["init_val"] = server["init_val"]
 
         res_enc = self.cryptor.encrypt(key,json.dumps(res),init_val=TGT_INIT_VAL)
 
@@ -107,11 +108,12 @@ class Kerberos_TGS:
         ticket["uid1"] = str(c_uid1)
         ticket["uid2"] = str(c_uid2)
         ticket["key"] = secrete_key
+        ticket["init_val"] = server["init_val"]
         ticket["target"] = req_server
         ticket["timestamp"] = crr_time
         ticket["lifetime"] = lifetime_ms
 
-        ticket_enc = self.cryptor.encrypt(server["key"],json.dumps(ticket),init_val=TGT_INIT_VAL)
+        ticket_enc = self.cryptor.encrypt(server["key"],json.dumps(ticket),init_val=server["init_val"])
 
         return (res_enc,ticket_enc)
 
