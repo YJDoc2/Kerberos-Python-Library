@@ -8,8 +8,6 @@ from .crypto_classes import Cryptor,AES_Cryptor
 
 from .db_classes import DB,Local_db
 
-from .interface_classes import User
-
 from .kerberos_server import Server
 
 from .ServerError import ServerError

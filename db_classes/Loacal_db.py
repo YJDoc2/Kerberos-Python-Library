@@ -15,13 +15,13 @@ class Local_db(DB):
 
 
 
-    def save_server(self,server_name,server_struct):
+    def save(self,server_name,server_struct):
         path = os.path.join(self.ticket_path,server_name)
 
         with open(path,mode="w") as f:
             f.write(json.dumps(server_struct))
 
-    def get_server(self,server_name):
+    def get(self,server_name):
         path=os.path.join(self.ticket_path,server_name)
 
         if not os.path.exists(path):
@@ -36,7 +36,7 @@ class Local_db(DB):
         
         try:
             return json.loads(ticket_string)
-        except json.JSONDecodeError:
+        except :
             raise ServerError("Error in decoding server information")
         
 

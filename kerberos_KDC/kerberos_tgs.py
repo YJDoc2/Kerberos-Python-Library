@@ -3,19 +3,27 @@ import random
 import time
 from math import inf
 from ..crypto_classes import Cryptor
-from ..db_classes import DB
+from ..db_classes import DB,Memory_DB
 from . import TGT_INIT_VAL,TICKET_LIFETIME
 from . import SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX
 from ..ServerError import ServerError
 
 class Kerberos_TGS:
 
-    def __init__(self,cryptor,db):
+    def __init__(self,cryptor,db,check_rand = False,verify_rand_db=None):
 
         if not isinstance(cryptor,Cryptor):
             raise TypeError("'cryptor' argument must be an instance of class extending class Cryptor")
         if not isinstance(db,DB):
             raise TypeError("'db' argument must be an instance of class extending class DB")
+        
+        if check_rand:
+            if verify_rand_db == None:
+                verify_rand_db = Memory_DB()
+            if not isinstance(verify_rand_db,DB):
+                raise TypeError("'verify_rand_db' argument must be an instance of class extending class DB")
+            self.verify_rand_db = verify_rand_db
+        self.check_rand = check_rand
         self.cryptor = cryptor
         self.db = db
         self.key = self.cryptor.get_random_key()
@@ -27,7 +35,7 @@ class Kerberos_TGS:
         server["uid1"] = "TGS"
         server["uid2"] = "SERVER"
         server["key"] = self.key
-        self.db.save_server(name,server)
+        self.db.save(name,server)
         
     def add_server(self,s_uid):
         name = str(s_uid)
@@ -36,7 +44,7 @@ class Kerberos_TGS:
         server["uid"] = name
         server["key"] = secrete_key
         server["init_val"] = random.randint(SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX)
-        self.db.save_server(name,server)
+        self.db.save(name,server)
 
     def get_tgt(self,c_uid1,c_uid2,key,lifetime_ms):
         tgt = {}
@@ -88,8 +96,19 @@ class Kerberos_TGS:
         if req.get("rand",inf) == inf:
             raise ServerError("Request must contain a Random Number")
 
+        if self.check_rand:
+            rand = req['rand']
+            user_str = f'{c_uid1}-{c_uid2}'
+            user_data = self.verify_rand_db.get(user_str)
+            if user_data == None:
+                self.verify_rand_db.save(user_str,[rand])
+            elif rand in user_data:
+                raise ServerError('The random number has already been used by the user')
+            else:
+                self.verify_rand_db.save(user_str,user_data.insert(0,rand))
+
         req_server = req["target"]
-        server = self.db.get_server(req_server)
+        server = self.db.get(req_server)
 
         secrete_key = self.cryptor.get_random_key()
         crr_time = int(time.time()*1000)
