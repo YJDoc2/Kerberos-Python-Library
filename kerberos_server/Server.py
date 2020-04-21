@@ -91,9 +91,6 @@ class Server:
 
         if rand == None:
             raise ServerError("'rand' is not present")
-
-        if not isinstance(rand,int) or not isinstance(rand,float):
-            raise ServerError("rand must be a Number")
         
         user_str = f'{c_uid1}-{c_uid2}'
         user_data = self.verify_rand_db.get(user_str)

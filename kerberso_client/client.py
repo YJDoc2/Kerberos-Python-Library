@@ -33,7 +33,7 @@ class Client:
         res = {}
         try:
             res = json.loads(res_str)
-        except json.JSONDecodeError:
+        except :
             raise TypeError("Incorrect response")
 
         return res
@@ -41,7 +41,7 @@ class Client:
     def save_ticket(self,name,ticket):
         self.keymap.save(name,ticket)
 
-    def get_ticket(self,name,ticket):
+    def get_ticket(self,name):
         return self.keymap.get(name)
 
     
