@@ -8,8 +8,13 @@ from . import TGT_INIT_VAL,TICKET_LIFETIME
 from . import SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX
 from ..ServerError import ServerError
 
+'''Class Kerberos_TGS for functionality of Genrating Authentication ticket and Ticket Granting Ticket.
+    This does not actually create any server, just has all functionality required for auth and TGT generation.
+
+'''
 class Kerberos_TGS:
 
+    #Pass check rand if want to verify random number sent in request and prevent replay attacks.
     def __init__(self,cryptor,db,check_rand = False,verify_rand_db=None):
 
         if not isinstance(cryptor,Cryptor):
@@ -39,7 +44,9 @@ class Kerberos_TGS:
             server["uid2"] = "SERVER"
             server["key"] = self.key
             self.db.save(name,server)
-        
+    
+    # To generate a Server structure and save it in db passed in constructor.
+    # The same structure must be used on a perticular server.
     def add_server(self,s_uid):
         name = str(s_uid)
         secrete_key = self.cryptor.get_random_key()
@@ -49,6 +56,9 @@ class Kerberos_TGS:
         server["init_val"] = random.randint(SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX)
         self.db.save(name,server)
 
+    # Generates a Ticket Granting Ticket.
+    # In case this structure is changed also check Kerberos_Server/Server and Kerberos_client/Client classes as well for consistancy.
+    # Also change the structure in verify_tgt_and_get_key()
     def get_tgt(self,c_uid1,c_uid2,key,lifetime_ms):
         tgt = {}
         tgt["uid1"] = str(c_uid1)
@@ -60,7 +70,7 @@ class Kerberos_TGS:
         
         return self.cryptor.encrypt(self.key,json.dumps(tgt),init_val=TGT_INIT_VAL)
 
-
+    # Verifies an encrypted TGT and return the key from it.
     def verify_tgt_and_get_key(self,c_uid1,c_uid2,tgt_enc_str):
         tgt_str = self.cryptor.decrypt(self.key,tgt_enc_str,init_val=TGT_INIT_VAL)
         tgt = {}
@@ -73,15 +83,23 @@ class Kerberos_TGS:
 
         if tgt["target"] != "TGS":
             raise ServerError("Not a TGT")
+
+        # In case there is some error of time settings on servers
+        # The timestamps in ticket must alway be less than current time on any server, as ticket will be granted before any use.
         if tgt["timestamp"] > crr_time:
             raise ServerError("Invalid timestamp in ticket")
+
+        # In case TGT is expired
         if tgt["lifetime"]+tgt["timestamp"] < crr_time:
             raise ServerError("Ticket Lifetime Eceeded")
+
+        # in case the ticket is not meant for the user who provided it.
         if tgt["uid1"] != str(c_uid1) or tgt["uid2"] != str(c_uid2):
             raise ServerError("Invalid Ticket Holder")
         
         return tgt["key"]
 
+    # A function to decrypt the request made to TGS
     def decrypt_req(self,enc_req_str,c_uid1,c_uid2,tgt):
         key = self.verify_tgt_and_get_key(c_uid1,c_uid2,tgt)
         req_str = self.cryptor.decrypt(key,enc_req_str,init_val=TGT_INIT_VAL)
@@ -91,7 +109,12 @@ class Kerberos_TGS:
         except json.JSONDecodeError:
             raise ServerError('Not a valid request')
 
-
+    # Function to verify the random number give by user is not already used by that user.
+    # Used to prevent Replay attacks.
+    # Note Must be explicitly called in order to check
+    # The checkRand argument in constructor must be given true in order to use this.
+    # This is not done directly in decrypt request as it may not be neccessary that the encrypted request will directly contain the
+    # random as a property, thus an extra method call is required.
     def verify_rand(self,c_uid1,c_uid2,rand):
         if not self.check_rand:
             raise ServerError('This instance was not initialized with check_rand = true')
@@ -112,6 +135,22 @@ class Kerberos_TGS:
             self.verify_rand_db.save(user_str,user_data.insert(0,rand))
 
     def get_response_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
+        """Function to generate the encrypted response and encrypted ticket.
+           In case this structure is changed also check Kerberos_Server/Server and Kerberos_client/Client classes as well for consistancy.
+
+        Arguments:
+            c_uid1 {String} -- uid for gien user which must be same on all servers, eg,ip address
+            c_uid2 {String} -- uid for gien user which must be same on all servers, eg,ip address
+            tgt {String} -- encrypted Ticket Granting Ticket
+            req_server {String} -- Server for which the ticket is to be generated
+            rand {Int} -- random number given by the request
+
+        Keyword Arguments:
+            lifetime_ms {Int} -- lifetime for generated ticket (default: {TICKET_LIFETIME})
+
+        Returns:
+            Tuple -- encrypted response and encrtypted ticket
+        """        
 
         key = self.verify_tgt_and_get_key(c_uid1,c_uid2,tgt)
        
@@ -131,6 +170,7 @@ class Kerberos_TGS:
 
         res_enc = self.cryptor.encrypt(key,json.dumps(res),init_val=TGT_INIT_VAL)
 
+        # In case this structure is changed also check Kerberos_Server/Server and Kerberos_client/Client classes as well for consistancy.
         ticket = {}
         ticket["uid1"] = str(c_uid1)
         ticket["uid2"] = str(c_uid2)

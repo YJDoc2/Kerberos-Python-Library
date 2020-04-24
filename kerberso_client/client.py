@@ -3,7 +3,8 @@ from ..db_classes import DB,Memory_DB
 from ..constants import REQ_INIT_VAL,TGT_INIT_VAL
 from ..crypto_classes import Cryptor,AES_Cryptor
 
-
+'''Class Client for Kerberos library. This does not actually set up any kind of client,but contains methods reuired on client side.
+'''
 class Client:
 
     def __init__(self,user_hash,cryptor=None,keymap_db=None):
@@ -23,10 +24,12 @@ class Client:
         self.cryptor = cryptor
         self.key = user_hash
         self.keymap = keymap_db
-    
+
+    # Encrypts a request object
     def encrypt_req(self,req,key,init_val = TGT_INIT_VAL):
         return self.cryptor.encrypt(key,json.dumps(req),init_val=init_val)
 
+    # decrypts an encrypted response string
     def decrypt_res(self,res_enc_str,key,init_val=TGT_INIT_VAL):
 
         res_str = self.cryptor.decrypt(key,res_enc_str,init_val=init_val)

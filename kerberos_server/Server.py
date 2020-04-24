@@ -2,10 +2,20 @@ import json
 import time
 from . import ServerError
 from ..crypto_classes import Cryptor,AES_Cryptor
-from ..db_classes import DB,Local_db,Memory_DB
+from ..db_classes import DB,Local_DB,Memory_DB
 
+'''Class Server which should be used on servers that are to be protected using Kerberos.
+    Note this does not actually creates a Server, just has the functionality that is required on Server side.
+    The optional argument checkRand in constructor allows checking of the random numbers sent in requests to prevent replay attacks
+
+    The cUid arguments in encrypt and decrypt functions are used to verify that the ticket and request belongs to the user
+    These must be same for a given user on a perticular server and the Ticket granting server. Cab be used to prevent replay attacks.
+'''
 class Server:
 
+
+    # Direct constructor if you have a server structure ready, or doing some tests.
+    # In case arguments are changed, please also check verifyRand function's comments.
     def __init__(self,server_dict,cryptor=None,check_rand = False,verify_rand_db = None):
 
         if cryptor == None:
@@ -27,13 +37,15 @@ class Server:
         self.init_val = server_dict["init_val"]
         self.name = server_dict["uid"]
     
+
+    # Static method for loading server structure from a db and make an object.
     @classmethod
     def make_server_from_db(cls,server_name,cryptor=None,db=None,check_rand=False,verify_rand_db=None):
 
         if cryptor == None:
             cryptor = AES_Cryptor()
         if db == None:
-            db = Local_db()
+            db = Local_DB()
         if not isinstance(cryptor,Cryptor):
             raise TypeError("'cryptor' argument must be an instance of class extending Cryptor class ")
         if not isinstance(db,DB):
@@ -42,6 +54,10 @@ class Server:
         server = db.get(server_name)
         return Server(server,cryptor,check_rand,verify_rand_db)
 
+
+    # Verifies the Ticket Granting Ticket and returns the key stored in it.
+    # In case the structure of TGT is changed in Kerberos_KDC/Kerberos_TGS this must be updated.
+    #cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
     def verify_ticket_and_get_key(self,c_uid1,c_uid2,ticket_enc_str):
         ticket_str = self.cryptor.decrypt(self.key,ticket_enc_str,init_val=self.init_val)
         ticket = {}
@@ -51,17 +67,30 @@ class Server:
             raise ServerError("Invalid Ticket")
         crr_time = int(time.time()*1000)
         
+        # In case the requesting user is not the one ticket was granted to
         if ticket["uid1"] != c_uid1 or ticket["uid2"] != c_uid2:
             raise ServerError("Invalid Ticket Holder")
+
+        # In case there is some error of time settings on servers
+        # The timestamps in ticket must alway be less than current time on any server, as ticket will be granted before any use.
         if ticket["timestamp"] > crr_time:
             raise ServerError("Invalid timestamp in ticket")
+
+        # In case ticket is expired
         if ticket["lifetime"]+ticket["timestamp"] < crr_time:
             raise ServerError("Ticket Lifetime Exceeded")
+
+        # In case the ticket is not intended for this server, this is set by TGS,
+        # and the server creted here, and stored in TGS's DB must be same.
         if ticket["target"] != self.name:
             raise ServerError("Wrong Target Server")
 
         return ticket["key"]
 
+
+    # Decrypts the encrypted request string given.
+    # In case the structure of TGT is changed in Kerberos_KDC/KerberosTGS this must be updated.
+    # cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
     def decrypt_req(self,c_uid1,c_uid2,ticket,req_enc_str):
         
         key = self.verify_ticket_and_get_key(c_uid1,c_uid2,ticket)
@@ -73,10 +102,15 @@ class Server:
         try:
             req = json.loads(req_str)
         except json.JSONDecodeError:
+            # In case the key is not applicable, or incorrect encoding
             raise ServerError("Invalid Request Encryption")
         
         return req
     
+
+    # Ecrypts the encrypted response object given.
+    # In case the structure of TGT is changed in Kerberos_KDC/KerberosTGS this must be updated.
+    # cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
     def encrypt_res(self,c_uid1,c_uid2,ticket,res):
 
         key = self.verify_ticket_and_get_key(c_uid1,c_uid2,ticket)
@@ -85,6 +119,11 @@ class Server:
 
         return enc_res
 
+    # Function to verify the random number give by user is not already used by that user.
+    # Used to prevent Replay attacks.
+    # The checkRand argument in constructor must be given true in order to use this.
+    # This is not done directly in decrypt request as it may not be neccessary that the encrypted request will directly contain the
+    # random as a property, thus an extra method call is required.
     def verify_rand(self, c_uid1,c_uid2,rand):
         if not self.check_rand:
             return TypeError('This instance was not initialized with check_rand = True')

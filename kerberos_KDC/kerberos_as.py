@@ -6,9 +6,12 @@ from ..db_classes import DB,Memory_DB
 from ..crypto_classes import Cryptor
 from .kerberos_tgs import Kerberos_TGS
 
-
+'''Class Kerberos_AS for functionality of Genrating Authentication ticket and Ticket Granting Ticket.
+    This does not actually create any server, just has all functionality required for auth and TGT generation.
+'''
 class Kerberos_AS:
 
+    # Pass check_rand True if want to verify random number sent in request and prevent replay attacks.
     def __init__(self,cryptor,tgs,check_rand=False,verify_rand_db=None):
 
         if not isinstance(tgs,Kerberos_TGS):
@@ -31,6 +34,24 @@ class Kerberos_AS:
 
 
     def make_auth_tickets(self,rand,c_uid1,c_uid2,user_hash,lifetime_ms=AUTH_TICKET_LIFETIME):
+        """Generates authentication and Ticket Granting Ticket.Does not actually authenticate, must be called after doing authentication.
+
+        Arguments:
+            rand {int} -- random number sent in user request,can be used to detect replay attacks, if check_rand is given as True in constructor
+            c_uid1 {String/Int} -- uid for gien user which must be same on all servers, eg,ip address
+            c_uid2 {String/Int} -- uid for gien user which must be same on all servers, eg,ip address
+            user_hash {String} -- hash generated from parameter specific to user, must be reproducible on client side,is used to encrypt auth ticket
+
+        Keyword Arguments:
+            lifetime_ms {int} -- lifetime for authentication ticket and TGT in milliseconds (default: {AUTH_TICKET_LIFETIME})
+
+        Raises:
+            TypeError: if user_hash is not of type string
+            ServerError: if random number is already used by user
+
+        Returns:
+            Tuple -- contains auth-ticket and ticket granting ticket
+        """        
         if not isinstance(user_hash,str):
             raise TypeError("'user_hash' argument must be an instance of class extending str")
         

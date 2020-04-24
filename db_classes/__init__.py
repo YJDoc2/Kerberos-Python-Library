@@ -1,3 +1,3 @@
 from .DB import DB
-from .Loacal_db import Local_db
+from .Local_db import Local_DB
 from .Memory_db import Memory_DB
