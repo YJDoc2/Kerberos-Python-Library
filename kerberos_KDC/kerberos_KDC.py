@@ -37,5 +37,11 @@ class Kerberos_KDC:
     def add_server(self,s_uid):
         return self.TGS.add_server(s_uid)
 
-    def get_res_and_ticket(self,c_uid1,c_uid2,tgt,req_enc_str,lifetime_ms=TICKET_LIFETIME):
-        return self.TGS.get_response_and_ticket(c_uid1,c_uid2,tgt,req_enc_str,lifetime_ms)
+    def get_res_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
+        return self.TGS.get_response_and_ticket(c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms)
+
+    def decrypt_req(self,enc_req_str,c_uid1,c_uid2,tgt):
+        return self.TGS.decrypt_req(enc_req_str,c_uid1,c_uid2,tgt)
+    
+    def verify_rand(self,c_uid1,c_uid2,rand):
+        return self.TGS.verify_rand(c_uid1,c_uid2,rand)
