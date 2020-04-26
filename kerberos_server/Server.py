@@ -54,17 +54,29 @@ class Server:
         server = db.get(server_name)
         return Server(server,cryptor,check_rand,verify_rand_db)
 
-
-    # Verifies the Ticket Granting Ticket and returns the key stored in it.
-    # In case the structure of TGT is changed in Kerberos_KDC/Kerberos_TGS this must be updated.
-    #cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
-    def verify_ticket_and_get_key(self,c_uid1,c_uid2,ticket_enc_str):
+    # Helper Function to decrypt tgt, Should not be used externally
+    def decrypt_ticket(self,ticket_enc_str):
         ticket_str = self.cryptor.decrypt(self.key,ticket_enc_str,init_val=self.init_val)
         ticket = {}
         try:
             ticket = json.loads(ticket_str)
         except json.JSONDecodeError:
             raise ServerError("Invalid Ticket")
+        return ticket
+    
+    # A function to decrypt the request made to TGS
+    def decrypt_req(self,enc_req_str,ticket):
+        dec_ticket = self.decrypt_ticket(ticket)
+        req_str = self.cryptor.decrypt(dec_ticket['key'],enc_req_str,init_val=self.init_val)
+        return req_str
+
+    # Verifies the Ticket Granting Ticket and returns the key stored in it.
+    # In case the structure of TGT is changed in Kerberos_KDC/Kerberos_TGS this must be updated.
+    #cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
+    def verify_ticket_and_get_key(self,c_uid1,c_uid2,ticket_enc_str):
+        
+        ticket = self.decrypt_ticket(ticket_enc_str)
+
         crr_time = int(time.time()*1000)
         
         # In case the requesting user is not the one ticket was granted to
@@ -88,24 +100,7 @@ class Server:
         return ticket["key"]
 
 
-    # Decrypts the encrypted request string given.
-    # In case the structure of TGT is changed in Kerberos_KDC/KerberosTGS this must be updated.
-    # cUid1 and cUid2 are identifies of a perticular user, and must be same on TGS and on a perticuar server
-    def decrypt_req(self,c_uid1,c_uid2,ticket,req_enc_str):
-        
-        key = self.verify_ticket_and_get_key(c_uid1,c_uid2,ticket)
-
-        req_str = self.cryptor.decrypt(key,req_enc_str,init_val=self.init_val)
-
-        req = {}
-
-        try:
-            req = json.loads(req_str)
-        except json.JSONDecodeError:
-            # In case the key is not applicable, or incorrect encoding
-            raise ServerError("Invalid Request Encryption")
-        
-        return req
+    
     
 
     # Ecrypts the encrypted response object given.

@@ -70,14 +70,20 @@ class Kerberos_TGS:
         
         return self.cryptor.encrypt(self.key,json.dumps(tgt),init_val=TGT_INIT_VAL)
 
-    # Verifies an encrypted TGT and return the key from it.
-    def verify_tgt_and_get_key(self,c_uid1,c_uid2,tgt_enc_str):
+
+    # Helper Function to decrypt tgt, Should not be used externally
+    def decrypt_tgt(self,tgt_enc_str):
         tgt_str = self.cryptor.decrypt(self.key,tgt_enc_str,init_val=TGT_INIT_VAL)
         tgt = {}
         try:
             tgt = json.loads(tgt_str)
         except json.JSONDecodeError:
             raise ServerError("Not a Ticket Granting Ticket")
+        return tgt
+
+    # Verifies an encrypted TGT and return the key from it.
+    def verify_tgt_and_get_key(self,c_uid1,c_uid2,tgt_enc_str):
+        tgt = self.decrypt_tgt(tgt_enc_str)
         
         crr_time = int(time.time()*1000)
 
@@ -100,14 +106,10 @@ class Kerberos_TGS:
         return tgt["key"]
 
     # A function to decrypt the request made to TGS
-    def decrypt_req(self,enc_req_str,c_uid1,c_uid2,tgt):
-        key = self.verify_tgt_and_get_key(c_uid1,c_uid2,tgt)
-        req_str = self.cryptor.decrypt(key,enc_req_str,init_val=TGT_INIT_VAL)
-        try:
-            req = json.loads(req_str)
-            return req
-        except json.JSONDecodeError:
-            raise ServerError('Not a valid request')
+    def decrypt_req(self,enc_req_str,tgt):
+        dec_tgt = self.decrypt_tgt(tgt)
+        req_str = self.cryptor.decrypt(dec_tgt['key'],enc_req_str,init_val=TGT_INIT_VAL)
+        return req_str
 
     # Function to verify the random number give by user is not already used by that user.
     # Used to prevent Replay attacks.

@@ -73,8 +73,8 @@ class Kerberos_KDC:
     def get_res_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
         return self.TGS.get_response_and_ticket(c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms)
 
-    def decrypt_req(self,enc_req_str,c_uid1,c_uid2,tgt):
-        return self.TGS.decrypt_req(enc_req_str,c_uid1,c_uid2,tgt)
+    def decrypt_req(self,enc_req_str,tgt):
+        return self.TGS.decrypt_req(enc_req_str,tgt)
     
     # To verify rand sent in the request
     # Note Must be explicitly called in order to check
