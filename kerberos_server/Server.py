@@ -20,7 +20,10 @@ class Server:
 
         if cryptor == None:
             cryptor = AES_Cryptor()
-        
+
+        if 'key' not in server_dict or 'init_val' not in server_dict or 'uid' not in server_dict:
+            raise ServerError('Invalid Server object')
+
         if check_rand:
             if verify_rand_db == None:
                 verify_rand_db = Memory_DB()
@@ -56,13 +59,13 @@ class Server:
 
     # Helper Function to decrypt tgt, Should not be used externally
     def decrypt_ticket(self,ticket_enc_str):
-        ticket_str = self.cryptor.decrypt(self.key,ticket_enc_str,init_val=self.init_val)
-        ticket = {}
         try:
+            ticket_str = self.cryptor.decrypt(self.key,ticket_enc_str,init_val=self.init_val)
             ticket = json.loads(ticket_str)
-        except json.JSONDecodeError:
+            return ticket
+        except :
             raise ServerError("Invalid Ticket")
-        return ticket
+        
     
     # A function to decrypt the request made to TGS
     def decrypt_req(self,enc_req_str,ticket):
@@ -121,11 +124,12 @@ class Server:
     # random as a property, thus an extra method call is required.
     def verify_rand(self, c_uid1,c_uid2,rand):
         if not self.check_rand:
-            return TypeError('This instance was not initialized with check_rand = True')
+            raise TypeError('This instance was not initialized with check_rand = True')
 
         if rand == None:
             raise ServerError("'rand' is not present")
-        
+        if not isinstance(rand,int) and not isinstance(rand,float):
+            raise ServerError("rand must be a number")
         user_str = f'{c_uid1}-{c_uid2}'
         user_data = self.verify_rand_db.get(user_str)
         if user_data == None:
@@ -133,4 +137,5 @@ class Server:
         elif rand in user_data:
             raise ServerError('The random number has already been used by the user')
         else:
-            self.verify_rand_db.save(user_str,user_data.insert(0,rand))
+            user_data.insert(0,rand)
+            self.verify_rand_db.save(user_str,user_data)

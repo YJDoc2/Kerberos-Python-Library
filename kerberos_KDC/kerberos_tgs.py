@@ -134,7 +134,8 @@ class Kerberos_TGS:
         elif rand in user_data:
             raise ServerError('The random number has already been used by the user')
         else:
-            self.verify_rand_db.save(user_str,user_data.insert(0,rand))
+            user_data.insert(0,rand)
+            self.verify_rand_db.save(user_str,user_data)
 
     def get_response_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
         """Function to generate the encrypted response and encrypted ticket.
