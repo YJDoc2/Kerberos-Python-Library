@@ -43,14 +43,14 @@ def test_given_ticket_path():
     
 
 #* should be able to create nested folder structure
-def test_nested_ticket_path():
+def test_nested_ticket_path1():
     before_each()
     ldb = Local_DB('./testtickets/Tickets')
     assert(os.path.isdir('./testtickets/Tickets'))
     
 
 #* should create folder inside existsing folder
-def test_nested_ticket_path():
+def test_nested_ticket_path2():
     before_each()
     os.mkdir('./testtickets')
     ldb = Local_DB('./testtickets/Tickets')
