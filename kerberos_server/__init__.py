@@ -1,4 +1,4 @@
-from ..ServerError import ServerError
+from ..Server_Error import Server_Error
 
 from .Server import Server
 

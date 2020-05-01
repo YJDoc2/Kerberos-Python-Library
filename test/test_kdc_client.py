@@ -1,7 +1,7 @@
 import json
 import random
 import time
-from .. import Server,Kerberos_TGS,Client,AES_Cryptor,Memory_DB,Kerberos_KDC,ServerError
+from .. import Server,Kerberos_TGS,Client,AES_Cryptor,Memory_DB,Kerberos_KDC,Server_Error
 import pytest
 
 #! Tests for KDC,CLient
@@ -16,19 +16,19 @@ def before_each():
     kdc.add_server('abc')
     server = Server.make_server_from_db('abc',db=mdb)
     key = cryptor.get_random_key()
-    client = Client(key)
+    client = Client()
 
-#* kdc should make correct auth ticket and client dhould decrypt them
+#* kdc should make correct auth ticket and client should decrypt them
 def test_auth_tickets():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
     try:
-        client.decrypt_res(auth,key)
+        client.decrypt_res(key,auth)
     except:
         pytest.fail("Client should have decrypted auth ticket")
-    dec_auth = client.decrypt_res(auth,key)
+    dec_auth = client.decrypt_res(key,auth)
     assert(dec_auth['uid1'] == 't1')
     assert(dec_auth['uid2'] == 'test')
     assert(dec_auth['rand'] == rand)
@@ -42,7 +42,7 @@ def test_TGT():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
     tgs = Kerberos_TGS(AES_Cryptor(),mdb)
     try:
         tgs.decrypt_tgt(tgt)
@@ -64,15 +64,15 @@ def test_kdc_response():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
-    (res,ticket) = kdc.get_res_and_ticket('t1','test',tgt,'abc',rand,8500)
-    key_in = client.decrypt_res(auth,key)['key']
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
+    (res,ticket) = kdc.get_res_and_ticket(rand,'abc','t1','test',tgt,8500)
+    key_in = client.decrypt_res(key,auth)['key']
     try:
-        client.decrypt_res(res,key_in)
+        client.decrypt_res(key_in,res)
     except:
         pytest.fail("Client should have decrypted the response")
     
-    dec_res = client.decrypt_res(res,key_in)
+    dec_res = client.decrypt_res(key_in,res)
     assert(dec_res['rand'] == rand)
     assert(dec_res['key'] != None)
     assert(dec_res['target'] == 'abc')
@@ -85,8 +85,8 @@ def test_valid_ticket():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
-    (res,ticket) = kdc.get_res_and_ticket('t1','test',tgt,'abc',rand,8500)
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
+    (res,ticket) = kdc.get_res_and_ticket(rand,'abc','t1','test',tgt,8500)
     try:
         server.decrypt_ticket(ticket)
     except:
@@ -103,18 +103,18 @@ def test_valid_ticket():
 
 #* client should encrypt essage and server should be able to decrypt it
 
-def test_client_encrypt_derver_decrypt():
+def test_client_encrypt_server_decrypt():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
-    (res,ticket) = kdc.get_res_and_ticket('t1','test',tgt,'abc',rand,8500)
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
+    (res,ticket) = kdc.get_res_and_ticket(rand,'abc','t1','test',tgt,8500)
 
-    key_in = client.decrypt_res(auth,key)['key']
-    key_req = client.decrypt_res(res,key_in)['key']
-    init = client.decrypt_res(res,key_in)['init_val']
+    key_in = client.decrypt_res(key,auth)['key']
+    key_req = client.decrypt_res(key_in,res)['key']
+    init = client.decrypt_res(key_in,res)['init_val']
     data = {'test':'test'}
-    req = client.encrypt_req(data,key_req,init)
+    req = client.encrypt_req(key_req,data,init)
 
     try:
         server.decrypt_req(req,ticket)
@@ -130,25 +130,25 @@ def test_client_decrypt_server_response():
     before_each()
     global kdc,mdb,server,client,key
     rand = random.randint(0,5000)
-    (auth,tgt) = kdc.gen_auth_tickets(rand,'t1','test',key,8500)
-    (res,ticket) = kdc.get_res_and_ticket('t1','test',tgt,'abc',rand,8500)
+    (auth,tgt) = kdc.make_auth_tickets(rand,'t1','test',key,8500)
+    (res,ticket) = kdc.get_res_and_ticket(rand,'abc','t1','test',tgt,8500)
 
     res_data = {'test':'test'}
     try:
-        server.encrypt_res('t1','test',ticket,res_data)
+        server.encrypt_res('t1','test',res_data,ticket)
     except:
         pytest.fail("Server Should have encrypted the response")
 
-    s_res = server.encrypt_res('t1','test',ticket,res_data)
-    key_in = client.decrypt_res(auth,key)['key']
-    key_req = client.decrypt_res(res,key_in)['key']
-    init = client.decrypt_res(res,key_in)['init_val']
+    s_res = server.encrypt_res('t1','test',res_data,ticket)
+    key_in = client.decrypt_res(key,auth)['key']
+    key_req = client.decrypt_res(key_in,res)['key']
+    init = client.decrypt_res(key_in,res)['init_val']
 
     try:
-        client.decrypt_res(s_res,key_req,init)
+        client.decrypt_res(key_req,s_res,init)
     except:
         pytest.fail("Server Should have encrypted the response")
-    dec_res = client.decrypt_res(s_res,key_req,init)
+    dec_res = client.decrypt_res(key_req,s_res,init)
     assert(dec_res['test'] == 'test')
     
 

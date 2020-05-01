@@ -1,8 +1,8 @@
 import os
 import json
 from .DB import DB
-from ..ServerError import ServerError
-'''Local_DB class used as defualt DB for saving tickets and server data tickets
+from ..Server_Error import Server_Error
+'''Local_DB class used as default DB for saving tickets and server data tickets
     This creates a folder  on given path or else creates a folder called 'Tickets',
     in directory from which the process calling was invoked.
     This saves and loads data in plain text format, using json module to convert object to string, and string to object.
@@ -12,7 +12,7 @@ class Local_DB(DB):
 
     def __init__(self,ticket_folder_path=None):
         
-        # If no ticket path is provided, defualt to Tickets in directory from which process calling this was invoked
+        # If no ticket path is provided, default to Tickets in directory from which process calling this was invoked
         if ticket_folder_path == None:
             ticket_folder_path = os.path.join(os.getcwd(),'Tickets')
 
@@ -23,51 +23,51 @@ class Local_DB(DB):
 
 
 
-    def save(self,server_name,server_struct):
-        """saves given server_struct after converting to string using json.dumps
+    def save(self,name,data):
+        """saves given data after converting to string using json.dumps
 
         Arguments:
-            server_name {String} -- name the structure will saved by
-            server_struct {Dictionary} -- object to save
+            name {String} -- name the structure will saved by
+            data {Any} -- object to save
 
         
         For default ticketPath, Servername = 'A' will create a text file at path './Tickets/A'
      
         """        
-        path = os.path.join(self.ticket_path,server_name)
+        path = os.path.join(self.ticket_path,name)
 
         with open(path,mode="w") as f:
-            f.write(json.dumps(server_struct))
+            f.write(json.dumps(data))
 
-    def get(self,server_name):
+    def get(self,name):
         """Retrives saved data
 
         Arguments:
-            server_name {String} -- name with which the object was saved
+            name {String} -- name with which the object was saved
 
         Raises:
-            ServerError: if file with given server_name is not found
-            ServerError: if the file found was empty
-            ServerError: if cannot convert data stored in file to a dictionary
+            Server_Error: if file with given server_name is not found
+            Server_Error: if the file found was empty
+            Server_Error: if cannot convert data stored in file to a dictionary
 
         Returns:
-            [type] -- [description]
+            Any -- data associated with given name if present
         """        
-        path=os.path.join(self.ticket_path,server_name)
+        path=os.path.join(self.ticket_path,name)
 
         if not os.path.exists(path):
-            raise ServerError(f"Requested Server with name {server_name} not Found")
+            raise Server_Error(f"Requested Server with name {name} not Found")
         
         ticket_string = ''
         with open(path,mode='r') as f:
             ticket_string = f.read()
 
         if ticket_string == '':
-            raise ServerError(f"Requested Server with name {server_name} not Found")
+            raise Server_Error(f"Requested Server with name {name} not Found")
         
         try:
             return json.loads(ticket_string)
         except :
-            raise ServerError("Error in decoding server information")
+            raise Server_Error("Error in decoding server information")
         
 

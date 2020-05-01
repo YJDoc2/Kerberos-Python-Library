@@ -1,7 +1,7 @@
 import os
 import shutil
 import random
-from .. import Server,Kerberos_TGS,Client,AES_Cryptor,Memory_DB,Local_DB,ServerError
+from .. import Server,Kerberos_TGS,Client,AES_Cryptor,Memory_DB,Local_DB,Server_Error
 import pytest
 
 
@@ -9,15 +9,15 @@ import pytest
 
 #* should throw error with incomplete details
 def test_incomplete_details_error():
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         Server({'key':'abc'})
     assert(str(e.value) == "Invalid Server object")
 
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         Server({'uid':'abc'})
     assert(str(e.value) == "Invalid Server object")
 
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         Server({'init_val':125})
     assert(str(e.value) == "Invalid Server object")
 
@@ -63,12 +63,12 @@ def test_invalid_rand_error():
     mdb = Memory_DB()
     mdb.save('abc',{'uid':'abc','key':'abc','init_val':123})
     server = Server.make_server_from_db('abc',db=mdb,check_rand=True)
-    with pytest.raises(ServerError) as e:
-        server.verify_rand('t1','t2',None)
+    with pytest.raises(Server_Error) as e:
+        server.verify_rand(None,'t1','t2')
     assert(str(e.value) == "'rand' is not present")
 
-    with pytest.raises(ServerError) as e:
-        server.verify_rand('t1','t2',{})
+    with pytest.raises(Server_Error) as e:
+        server.verify_rand({},'t1','t2')
     assert(str(e.value) == "rand must be a number")
 
 
@@ -80,16 +80,16 @@ def test_verify_random():
     rand = random.randint(0,5000)
 
     try:
-        server.verify_rand('t1','t2',rand)
+        server.verify_rand(rand,'t1','t2')
     except:
         pytest.fail("rand should have been accepted")
     try:
-        server.verify_rand('t1','t2',random.randint(0,5000))
+        server.verify_rand(random.randint(0,5000),'t1','t2')
     except:
         pytest.fail("rand should have been accepted")
 
-    with pytest.raises(ServerError) as e:
-        server.verify_rand('t1','t2',rand)
+    with pytest.raises(Server_Error) as e:
+        server.verify_rand(rand,'t1','t2')
 
     assert(str(e.value) == "The random number has already been used by the user")
 
@@ -111,7 +111,7 @@ def test_decrypt_valid():
     before_each()
     global mdb,cryptor,tgs,server
     tgt = tgs.get_tgt('t1','t2',cryptor.get_random_key(),5000)
-    (res,ticket) = tgs.get_response_and_ticket('t1','t2',tgt,'abc',50)
+    (res,ticket) = tgs.get_res_and_ticket(50,'abc','t1','t2',tgt)
     try:
        server.verify_ticket_and_get_key('t1','t2',ticket)
     except:
@@ -123,26 +123,26 @@ def test_invalid_tickets_error():
     global mdb,cryptor,tgs,server
     tgt = tgs.get_tgt('t1','t2',cryptor.get_random_key(),5000)
 
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         server.verify_ticket_and_get_key('t1','t2','strooo')
     assert(str(e.value) == "Invalid Ticket")
     
-    ticket0 = tgs.get_response_and_ticket('t1','t2',tgt,'abc',50,-1)[1]
-    with pytest.raises(ServerError) as e:
+    ticket0 = tgs.get_res_and_ticket(50,'abc','t1','t2',tgt,-1)[1]
+    with pytest.raises(Server_Error) as e:
         server.verify_ticket_and_get_key('t1','t2',ticket0)
     assert(str(e.value) == "Ticket Lifetime Exceeded")
     
 
-    ticket1 = tgs.get_response_and_ticket('t1','t2',tgt,'abc',50)[1]
-    with pytest.raises(ServerError) as e:
+    ticket1 = tgs.get_res_and_ticket(50,'abc','t1','t2',tgt)[1]
+    with pytest.raises(Server_Error) as e:
         server.verify_ticket_and_get_key('t1','t',ticket1)
     assert(str(e.value) == "Invalid Ticket Holder")
 
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         server.verify_ticket_and_get_key('t','t1',ticket1)
     assert(str(e.value) == "Invalid Ticket Holder")
 
-    ticket2 = tgs.get_response_and_ticket('t1','t2',tgt,'ccc',50)[1]
-    with pytest.raises(ServerError) as e:
+    ticket2 = tgs.get_res_and_ticket(50,'ccc','t1','t2',tgt)[1]
+    with pytest.raises(Server_Error) as e:
         server.verify_ticket_and_get_key('t1','t',ticket2)
     assert(str(e.value) == "Invalid Ticket")

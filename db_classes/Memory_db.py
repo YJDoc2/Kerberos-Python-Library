@@ -1,5 +1,5 @@
 from .DB import DB
-from ..ServerError import ServerError
+from ..Server_Error import Server_Error
 
 '''Class Memory_DB 
     used to saves data in memory using map.
@@ -14,8 +14,8 @@ class Memory_DB(DB):
 
 
 
-    def save(self,name,struct):
-        self.data[name] = struct
+    def save(self,name,data):
+        self.data[name] = data
 
     def get(self,name):
         return self.data.get(name,None)

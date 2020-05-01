@@ -1,6 +1,6 @@
 import os
 import shutil
-from .. import Memory_DB,Local_DB,ServerError
+from .. import Memory_DB,Local_DB,Server_Error
 import pytest
 
 #!MemoryDB Class tests
@@ -86,7 +86,7 @@ def test_save_objects():
 def test_invalid_key_error():
     before_each()
     ldb = Local_DB()
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         ldb.get('test')
     assert str(e.value) == "Requested Server with name test not Found"
         
@@ -98,7 +98,7 @@ def test_invalid_save_error():
     file = open('./Tickets/test','w')
     file.write("'{test:'")
     file.close()
-    with pytest.raises(ServerError) as e:
+    with pytest.raises(Server_Error) as e:
         ldb.get('test')
     assert str(e.value) == "Error in decoding server information"
 

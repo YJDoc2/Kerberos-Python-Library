@@ -7,7 +7,7 @@ from ..crypto_classes import Cryptor,AES_Cryptor
 '''
 class Client:
 
-    def __init__(self,user_hash,cryptor=None,keymap_db=None):
+    def __init__(self,cryptor=None,keymap_db=None):
 
         if cryptor == None:
             cryptor = AES_Cryptor()
@@ -18,19 +18,16 @@ class Client:
             raise TypeError("'cryptor' argument must be an instance of class extending Cryptor class ")
         if not isinstance(keymap_db,DB):
             raise TypeError("'keymap_DB' argument must be an instance of class extending DB class ")
-        if not isinstance(user_hash,str):
-            raise TypeError("'user_hash' argument must be an instance of str")
 
         self.cryptor = cryptor
-        self.key = user_hash
         self.keymap = keymap_db
 
     # Encrypts a request object
-    def encrypt_req(self,req,key,init_val = TGT_INIT_VAL):
+    def encrypt_req(self,key,req,init_val = TGT_INIT_VAL):
         return self.cryptor.encrypt(key,json.dumps(req),init_val=init_val)
 
     # decrypts an encrypted response string
-    def decrypt_res(self,res_enc_str,key,init_val=TGT_INIT_VAL):
+    def decrypt_res(self,key,res_enc_str,init_val=TGT_INIT_VAL):
 
         res_str = self.cryptor.decrypt(key,res_enc_str,init_val=init_val)
         res = {}

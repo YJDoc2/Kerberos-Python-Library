@@ -10,6 +10,6 @@ from .db_classes import DB,Memory_DB,Local_DB
 
 from .kerberos_server import Server
 
-from .ServerError import ServerError
+from .Server_Error import Server_Error
 
-from .kerberso_client import Client
+from .kerberos_client import Client

@@ -35,7 +35,7 @@ class Kerberos_KDC:
         self.TGS = Kerberos_TGS(cryptor,server_db,check_rand=check_rand,verify_rand_db=verify_rand_db)
         self.AS = Kerberos_AS(cryptor,self.TGS,check_rand=check_rand,verify_rand_db=verify_rand_db)
         
-    def gen_auth_tickets(self,rand,c_uid1,c_uid2,user_hash,lifetime_ms=AUTH_TICKET_LIFETIME):
+    def make_auth_tickets(self,rand,c_uid1,c_uid2,user_hash,lifetime_ms=AUTH_TICKET_LIFETIME):
         """For generating initial authentication tickets
            Note this is supposed to be called after verifying that the user making request is a valid user,
            as this does not performs any auth checks,but only make the tickets.
@@ -70,13 +70,13 @@ class Kerberos_KDC:
 
     # This is used to generate tickets.
     # returns an encrypted response and encrypted ticket
-    def get_res_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
-        return self.TGS.get_response_and_ticket(c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms)
+    def get_res_and_ticket(self,rand,req_server,c_uid1,c_uid2,tgt,lifetime_ms=TICKET_LIFETIME):
+        return self.TGS.get_res_and_ticket(rand,req_server,c_uid1,c_uid2,tgt,lifetime_ms)
 
     def decrypt_req(self,enc_req_str,tgt):
         return self.TGS.decrypt_req(enc_req_str,tgt)
     
     # To verify rand sent in the request
     # Note Must be explicitly called in order to check
-    def verify_rand(self,c_uid1,c_uid2,rand):
-        return self.TGS.verify_rand(c_uid1,c_uid2,rand)
+    def verify_rand(self,rand,c_uid1,c_uid2):
+        return self.TGS.verify_rand(rand,c_uid1,c_uid)

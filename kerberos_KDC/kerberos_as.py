@@ -1,7 +1,7 @@
 import time
 import json
 from . import AUTH_INIT_VAL,AUTH_TICKET_LIFETIME
-from ..ServerError import ServerError
+from ..Server_Error import Server_Error
 from ..db_classes import DB,Memory_DB
 from ..crypto_classes import Cryptor
 from .kerberos_tgs import Kerberos_TGS
@@ -47,7 +47,7 @@ class Kerberos_AS:
 
         Raises:
             TypeError: if user_hash is not of type string
-            ServerError: if random number is already used by user
+            Server_Error: if random number is already used by user
 
         Returns:
             Tuple -- contains auth-ticket and ticket granting ticket
@@ -61,7 +61,7 @@ class Kerberos_AS:
             if user_data == None:
                 self.verify_rand_db.save(user_str,[rand])
             elif rand in user_data:
-                raise ServerError('The random number has already been used by the user')
+                raise Server_Error('The random number has already been used by the user')
             else:
                 self.verify_rand_db.save(user_str,user_data.insert(0,rand))
 

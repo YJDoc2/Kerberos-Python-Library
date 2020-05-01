@@ -6,7 +6,7 @@ from ..crypto_classes import Cryptor
 from ..db_classes import DB,Memory_DB
 from . import TGT_INIT_VAL,TICKET_LIFETIME
 from . import SERVER_INIT_RAND_MIN,SERVER_INIT_RAND_MAX
-from ..ServerError import ServerError
+from ..Server_Error import Server_Error
 
 '''Class Kerberos_TGS for functionality of Genrating Authentication ticket and Ticket Granting Ticket.
     This does not actually create any server, just has all functionality required for auth and TGT generation.
@@ -72,13 +72,13 @@ class Kerberos_TGS:
 
 
     # Helper Function to decrypt tgt, Should not be used externally
-    def decrypt_tgt(self,tgt_enc_str):
-        tgt_str = self.cryptor.decrypt(self.key,tgt_enc_str,init_val=TGT_INIT_VAL)
+    def decrypt_tgt(self,enc_tgt_str):
+        tgt_str = self.cryptor.decrypt(self.key,enc_tgt_str,init_val=TGT_INIT_VAL)
         tgt = {}
         try:
             tgt = json.loads(tgt_str)
         except json.JSONDecodeError:
-            raise ServerError("Not a Ticket Granting Ticket")
+            raise Server_Error("Not a Ticket Granting Ticket")
         return tgt
 
     # Verifies an encrypted TGT and return the key from it.
@@ -88,20 +88,20 @@ class Kerberos_TGS:
         crr_time = int(time.time()*1000)
 
         if tgt["target"] != "TGS":
-            raise ServerError("Not a TGT")
+            raise Server_Error("Not a TGT")
 
         # In case there is some error of time settings on servers
         # The timestamps in ticket must alway be less than current time on any server, as ticket will be granted before any use.
         if tgt["timestamp"] > crr_time:
-            raise ServerError("Invalid timestamp in ticket")
+            raise Server_Error("Invalid timestamp in ticket")
 
         # In case TGT is expired
         if tgt["lifetime"]+tgt["timestamp"] < crr_time:
-            raise ServerError("Ticket Lifetime Eceeded")
+            raise Server_Error("Ticket Lifetime Eceeded")
 
         # in case the ticket is not meant for the user who provided it.
         if tgt["uid1"] != str(c_uid1) or tgt["uid2"] != str(c_uid2):
-            raise ServerError("Invalid Ticket Holder")
+            raise Server_Error("Invalid Ticket Holder")
         
         return tgt["key"]
 
@@ -117,14 +117,14 @@ class Kerberos_TGS:
     # The checkRand argument in constructor must be given true in order to use this.
     # This is not done directly in decrypt request as it may not be neccessary that the encrypted request will directly contain the
     # random as a property, thus an extra method call is required.
-    def verify_rand(self,c_uid1,c_uid2,rand):
+    def verify_rand(self,rand,c_uid1,c_uid2):
         if not self.check_rand:
-            raise ServerError('This instance was not initialized with check_rand = true')
+            raise Server_Error('This instance was not initialized with check_rand = true')
         if not bool(rand):
-            raise ServerError("rand' is not present")
+            raise Server_Error("rand' is not present")
 
         if isnan(rand):
-            raise ServerError('rand must be a number')
+            raise Server_Error('rand must be a number')
 
         user_str = f'{c_uid1}-{c_uid2}'
         user_data = self.verify_rand_db.get(user_str)
@@ -132,12 +132,12 @@ class Kerberos_TGS:
         if user_data == None:
             self.verify_rand_db.save(user_str,[rand])
         elif rand in user_data:
-            raise ServerError('The random number has already been used by the user')
+            raise Server_Error('The random number has already been used by the user')
         else:
             user_data.insert(0,rand)
             self.verify_rand_db.save(user_str,user_data)
 
-    def get_response_and_ticket(self,c_uid1,c_uid2,tgt,req_server,rand,lifetime_ms=TICKET_LIFETIME):
+    def get_res_and_ticket(self,rand,req_server,c_uid1,c_uid2,tgt,lifetime_ms=TICKET_LIFETIME):
         """Function to generate the encrypted response and encrypted ticket.
            In case this structure is changed also check Kerberos_Server/Server and Kerberos_client/Client classes as well for consistancy.
 
