@@ -39,7 +39,7 @@ This library provides default classes for basic database and cryptographic requi
 
 ## Dependencies
 
-This Module uses pycrypto module for the AES 256 CTR mode encryption used by default.
+This Module uses pycryptodome module for the AES 256 CTR mode encryption used by default.
 
 Other than that this uses pytest as testing framework.
 
