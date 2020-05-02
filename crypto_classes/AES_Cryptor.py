@@ -21,8 +21,8 @@ class AES_Cryptor(Cryptor):
         Returns:
             String -- encrypted string encoded in base 64 , so the length is reduced
         """    
-        aes = AES.new(key,mode=AES.MODE_CTR,counter=Counter.new(128,initial_value=kwargs['init_val']))
-        ret_str = base64.b64encode(aes.encrypt(value_str))
+        aes = AES.new(key.encode(),mode=AES.MODE_CTR,counter=Counter.new(128,initial_value=kwargs['init_val']))
+        ret_str = base64.b64encode(aes.encrypt(value_str.encode()))
         del aes
         return ret_str
 
@@ -37,7 +37,7 @@ class AES_Cryptor(Cryptor):
         Returns:
             String -- decrypted string
         """        
-        aes = AES.new(key,mode=AES.MODE_CTR,counter=Counter.new(128,initial_value=kwargs['init_val']))
+        aes = AES.new(key.encode(),mode=AES.MODE_CTR,counter=Counter.new(128,initial_value=kwargs['init_val']))
         ret_str = aes.decrypt(base64.b64decode(enc_str))
         del aes
         return ret_str
