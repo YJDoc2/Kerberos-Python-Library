@@ -15,7 +15,7 @@ Also For example usage of this , check out <a href='https://github.com/YJDoc2/Ke
 
 ## About
 
-This library provides classes for setting up Kerberos protection methods over a protocol.
+This library provides classes for setting up Kerberos methods over a protocol.
 
 This contains has three main parts :
 
@@ -52,7 +52,7 @@ The detailed API documentation for usage can be found in API md file.
 
 The outermost \_\_init\_\_.py file exports all the components.
 
-All classes and constants exported by the module can be brought in by using :
+All classes and constants exported by the module can be brought in by using :<br />
 <code>from 'path/to/Kerberos-py-library' import ComponentClass</code>
 
 <strong>Note</strong> that some methods of API have a large number of params, upto 6, clearly breaking the max-number-of-params-should-be-3 guideline of good programming.For slightly easier use of these, **all params** of **all** methods follow the following order :  

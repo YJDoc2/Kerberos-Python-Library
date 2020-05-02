@@ -209,7 +209,7 @@ Returns : {Any} The data that was saved.
 
 <h5 id='cryptor-get-random-key'>get_random_key()</h5>
 <p>This method is used to get the keys required for encryption and decryption</p>
-Params : None
+Params : None<br />
 Returns : {String/Number} A key that can be given to encrypt and decrypt methods.
 
 <h5 id='cryptor-encrypt'>encrypt(key,value_str,**kwargs)</h5>
@@ -239,7 +239,7 @@ Returns : {String} The decrypted form of the given string.
 
 <h5 id='aescryptor-get-random-key'>get_random_key()</h5>
 <p>This method is used to get the keys required for encryption and decryption.This generates a 32 bytes (256 bit) long string that can be used for AES-CTR encryption/decryption.</p>
-Params : None
+Params : None<br />
 Returns : {String} A key that can be given to encrypt and decrypt methods.
 
 <h5 id='aescryptor-encrypt'>encrypt(key,value_str,**kwargs)</h5>
