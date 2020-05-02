@@ -79,4 +79,4 @@ class Kerberos_KDC:
     # To verify rand sent in the request
     # Note Must be explicitly called in order to check
     def verify_rand(self,rand,c_uid1,c_uid2):
-        return self.TGS.verify_rand(rand,c_uid1,c_uid)
+        return self.TGS.verify_rand(rand,c_uid1,c_uid2)

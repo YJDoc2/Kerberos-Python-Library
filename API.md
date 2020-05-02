@@ -1,5 +1,9 @@
 # Kerberos Python Library API References
 
+<strong>Note</strong> that some methods of API have a large number of params, upto 6, clearly breaking the max-number-of-params-should-be-3 guideline of good programming.For slightly easier use of these, **all params** of **all** methods follow the following order :  
+random number ; request server ; UIDs for user : key ; encryption/decryption data ; tickets ; optional params.
+whichever are present.
+
 ## Index
 
 <ul>
